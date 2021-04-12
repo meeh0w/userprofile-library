@@ -1,18 +1,32 @@
+import { Profiler } from "inspector";
 import { DacLibrary } from "skynet-js";
 import { PermCategory, Permission, PermType } from "skynet-mysky-utils";
-
+import { Convert, Profile } from "./skystandards"
 import {
-  IContentCreation,
-  IContentInteraction,
-  IContentRecordDAC,
-  IDACResponse,
+  ICreateProfileDACResponse,IUserProfileDAC
 } from "./types";
 
 const DAC_DOMAIN = "crqa.hns";
 
-export class ContentRecordDAC extends DacLibrary implements IContentRecordDAC {
+export class UserProfileDAC extends DacLibrary implements IUserProfileDAC {
   public constructor() {
     super(DAC_DOMAIN);
+  }
+  public async createProfile(data: Profile): Promise<ICreateProfileDACResponse> {
+    if (!this.connector) {
+      throw new Error("Connector not initialized");
+    }
+    if(typeof data === 'string'){
+      data = Convert.toProfile(data);
+    }
+    return await this.connector.connection
+      .remoteHandle()
+      .call("createProfile", data);
+  }
+  public async getProfile(data: string): Promise<Profile> {
+
+    // to be implimentted to directly fetch the data
+    throw new Error("Method not implemented.");
   }
 
   public getPermissions(): Permission[] {
@@ -30,29 +44,5 @@ export class ContentRecordDAC extends DacLibrary implements IContentRecordDAC {
         PermType.Write
       ),
     ];
-  }
-
-  public async recordNewContent(
-    ...data: IContentCreation[]
-  ): Promise<IDACResponse> {
-    if (!this.connector) {
-      throw new Error("Connector not initialized");
-    }
-
-    return await this.connector.connection
-      .remoteHandle()
-      .call("recordNewContent", ...data);
-  }
-
-  public async recordInteraction(
-    ...data: IContentInteraction[]
-  ): Promise<IDACResponse> {
-    if (!this.connector) {
-      throw new Error("Connector not initialized");
-    }
-
-    return await this.connector.connection
-      .remoteHandle()
-      .call("recordInteraction", ...data);
   }
 }

@@ -1,19 +1,12 @@
-export interface IContentCreation {
-  skylink: string; // skylink
-  metadata: object; // should be valid JSON
-}
+import { Profile } from "./skystandards";
 
-export interface IContentInteraction {
-  skylink: string; // skylink
-  metadata: object; // should be valid JSON
-}
 
-export interface IDACResponse {
+export interface ICreateProfileDACResponse {
   submitted: boolean;
   error?: string;
 }
 
-export interface IContentRecordDAC {
-  recordNewContent(...data: IContentCreation[]): Promise<IDACResponse>;
-  recordInteraction(...data: IContentInteraction[]): Promise<IDACResponse>;
+export interface IUserProfileDAC {
+ createProfile(data:Profile):Promise<ICreateProfileDACResponse>;
+ getProfile(data:string):Promise<Profile>;
 }
