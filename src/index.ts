@@ -6,7 +6,7 @@ import {
   ICreateProfileDACResponse,IUserProfileDAC
 } from "./types";
 
-const DAC_DOMAIN = "crqa.hns";
+const DAC_DOMAIN = "skyuser.hns";
 
 export class UserProfileDAC extends DacLibrary implements IUserProfileDAC {
   public constructor() {
@@ -21,12 +21,16 @@ export class UserProfileDAC extends DacLibrary implements IUserProfileDAC {
     }
     return await this.connector.connection
       .remoteHandle()
-      .call("createProfile", data);
+      .call("createNewProfile", data);
   }
-  public async getProfile(data: string): Promise<Profile> {
-
-    // to be implimentted to directly fetch the data
-    throw new Error("Method not implemented.");
+  public async getProfile(): Promise<any> {
+    if (!this.connector) {
+      throw new Error("Connector not initialized");
+    }
+   
+    return await this.connector.connection
+      .remoteHandle()
+      .call("getProfile",{test:"test"});
   }
 
   public getPermissions(): Permission[] {

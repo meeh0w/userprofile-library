@@ -8,5 +8,5 @@ export interface ICreateProfileDACResponse {
 
 export interface IUserProfileDAC {
  createProfile(data:Profile):Promise<ICreateProfileDACResponse>;
- getProfile(data:string):Promise<Profile>;
+ getProfile(data:string):Promise<any>;
 }
