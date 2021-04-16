@@ -32,6 +32,15 @@ export class UserProfileDAC extends DacLibrary implements IUserProfileDAC {
       .remoteHandle()
       .call("getProfile",{test:"test"});
   }
+  public async getProfileHistory(): Promise<any> {
+    if (!this.connector) {
+      throw new Error("Connector not initialized");
+    }
+   
+    return await this.connector.connection
+      .remoteHandle()
+      .call("getProfileHistory",{test:"test"});
+  }
 
   public getPermissions(): Permission[] {
     return [

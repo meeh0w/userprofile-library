@@ -18,6 +18,7 @@ export interface Profile {
     username: string,
     aboutme?: string,
     location?: string,
+    preferance?:any,
     tags?: Tag[],
     avatar?: Avatar[]
 
@@ -173,6 +174,7 @@ const typeMap: any = {
         { json: "username", js: "username", typ: u(undefined, "") }, 
         { json: "location", js: "location", typ: u(undefined, "") },
         { json: "aboutme", js: "aboutme", typ: u(undefined, "") },
+        { json: "preferance", js: "preference", typ: u(undefined, "") },
         { json: "tags", js: "tags", typ: u(undefined, []) },
         { json: "avatar", js: "avatar", typ: u(undefined, []) },
     ], "any"),

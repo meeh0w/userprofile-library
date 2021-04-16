@@ -9,4 +9,5 @@ export interface ICreateProfileDACResponse {
 export interface IUserProfileDAC {
  createProfile(data:Profile):Promise<ICreateProfileDACResponse>;
  getProfile(data:string):Promise<any>;
+ getProfileHistory(data:string):Promise<any>;
 }
