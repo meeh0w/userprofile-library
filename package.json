@@ -1,6 +1,6 @@
 {
   "name": "@kbiswas/userprofile-record-library",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "This library exposes a class that wraps the Content Record DAC, created and hosted by SkynetLabs.",
   "main": "dist/index.js",
   "type": "module",
