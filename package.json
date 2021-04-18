@@ -9,7 +9,6 @@
   ],
   "scripts": {
     "build": "rimraf dist && tsc --project tsconfig.build.json",
-    
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "Peter-Jan Brone",
@@ -23,7 +22,7 @@
   },
   "dependencies": {
     "post-me": "^0.4.5",
-    "skynet-js": "^4.0.0-beta",
+    "skynet-js": "^4.0.1-beta",
     "skynet-mysky-utils": "^0.1.0"
   },
   "devDependencies": {

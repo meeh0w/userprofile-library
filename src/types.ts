@@ -1,13 +1,13 @@
 import { Profile } from "./skystandards";
 
 
-export interface ICreateProfileDACResponse {
+export interface ICreateDACResponse {
   submitted: boolean;
   error?: string;
 }
 
 export interface IUserProfileDAC {
- createProfile(data:Profile):Promise<ICreateProfileDACResponse>;
+ createProfile(data:Profile):Promise<ICreateDACResponse>;
  getProfile(data:string):Promise<any>;
  getProfileHistory(data:string):Promise<any>;
 }

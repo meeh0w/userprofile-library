@@ -18,9 +18,15 @@ export interface Profile {
     username: string,
     aboutme?: string,
     location?: string,
-    preferance?:any,
     tags?: Tag[],
     avatar?: Avatar[]
+
+}
+
+export interface Preferance {
+
+    darkmode?: boolean,
+    portal?: string
 
 }
 
@@ -29,6 +35,9 @@ export interface Profile {
 export class Convert {
     public static toProfile(json: string): Profile {
         return cast(JSON.parse(json), r("Profile"));
+    }
+    public static toPreferance(json: string): Preferance {
+        return cast(JSON.parse(json), r("Preferance"));
     }
     
 
@@ -174,8 +183,10 @@ const typeMap: any = {
         { json: "username", js: "username", typ: u(undefined, "") }, 
         { json: "location", js: "location", typ: u(undefined, "") },
         { json: "aboutme", js: "aboutme", typ: u(undefined, "") },
-        { json: "preferance", js: "preference", typ: u(undefined, "") },
         { json: "tags", js: "tags", typ: u(undefined, []) },
         { json: "avatar", js: "avatar", typ: u(undefined, []) },
-    ], "any"),
+    ]
+    , "any"),
+    "Preferance": o([ { json: "darkmode", js: "darkmode", typ: u(undefined, "") }, 
+    { json: "portal", js: "portal", typ: u(undefined, "") }],"any"),
 };
