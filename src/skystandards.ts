@@ -1,43 +1,12 @@
+import { Preference, Profile } from "./types";
 
-export interface Avatar {
-
-    ext: string,
-    w: number,
-    h: number,
-    url: string
-
-}
-
-export interface Tag{
-    tag:string,
-    permission:string
-}
-
-export interface Profile {
-
-    username: string,
-    aboutme?: string,
-    location?: string,
-    tags?: Tag[],
-    avatar?: Avatar[]
-
-}
-
-export interface Preferance {
-
-    darkmode?: boolean,
-    portal?: string
-
-}
-
-// Converts JSON strings to/from your types
 // and asserts the results of JSON.parse at runtime
 export class Convert {
     public static toProfile(json: string): Profile {
         return cast(JSON.parse(json), r("Profile"));
     }
-    public static toPreferance(json: string): Preferance {
-        return cast(JSON.parse(json), r("Preferance"));
+    public static toPreference(json: string): Preference {
+        return cast(JSON.parse(json), r("Preference"));
     }
     
 
@@ -182,11 +151,11 @@ const typeMap: any = {
     "Profile": o([
         { json: "username", js: "username", typ: u(undefined, "") }, 
         { json: "location", js: "location", typ: u(undefined, "") },
-        { json: "aboutme", js: "aboutme", typ: u(undefined, "") },
-        { json: "tags", js: "tags", typ: u(undefined, []) },
+        { json: "aboutMe", js: "aboutMe", typ: u(undefined, "") },
+        { json: "topics", js: "topics", typ: u(undefined, []) },
         { json: "avatar", js: "avatar", typ: u(undefined, []) },
     ]
     , "any"),
-    "Preferance": o([ { json: "darkmode", js: "darkmode", typ: u(undefined, "") }, 
+    "Preference": o([ { json: "darkmode", js: "darkmode", typ: u(undefined, "") }, 
     { json: "portal", js: "portal", typ: u(undefined, "") }],"any"),
 };

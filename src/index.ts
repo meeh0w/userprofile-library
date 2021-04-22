@@ -1,9 +1,8 @@
-import { Profiler } from "inspector";
 import { DacLibrary } from "skynet-js";
 import { PermCategory, Permission, PermType } from "skynet-mysky-utils";
-import { Convert, Preferance, Profile } from "./skystandards"
+import { Convert } from "./skystandards"
 import {
-  ICreateDACResponse,IUserProfileDAC
+  ICreateDACResponse,IUserProfileDAC, Preference, Profile
 } from "./types";
 
 const DAC_DOMAIN = "skyuser.hns";
@@ -12,7 +11,8 @@ export class UserProfileDAC extends DacLibrary implements IUserProfileDAC {
   public constructor() {
     super(DAC_DOMAIN);
   }
-  public async createProfile(data: Profile): Promise<ICreateDACResponse> {
+  
+  public async setProfile(data: Profile): Promise<ICreateDACResponse> {
     if (!this.connector) {
       throw new Error("Connector not initialized");
     }
@@ -21,29 +21,19 @@ export class UserProfileDAC extends DacLibrary implements IUserProfileDAC {
     }
     return await this.connector.connection
       .remoteHandle()
-      .call("createNewProfile", data);
+      .call("setProfile", data);
   }
-  public async updateProfile(data: Profile): Promise<ICreateDACResponse> {
+
+  public async setPreference(data: Preference): Promise<ICreateDACResponse> {
     if (!this.connector) {
       throw new Error("Connector not initialized");
     }
     if(typeof data === 'string'){
-      data = Convert.toProfile(data);
+      data = Convert.toPreference(data);
     }
     return await this.connector.connection
       .remoteHandle()
-      .call("updateProfile", data);
-  }
-  public async updatePreferance(data: Preferance): Promise<ICreateDACResponse> {
-    if (!this.connector) {
-      throw new Error("Connector not initialized");
-    }
-    if(typeof data === 'string'){
-      data = Convert.toPreferance(data);
-    }
-    return await this.connector.connection
-      .remoteHandle()
-      .call("updatePreferance", data);
+      .call("setPreference", data);
   }
 
   public async getProfile(): Promise<any> {
@@ -54,14 +44,16 @@ export class UserProfileDAC extends DacLibrary implements IUserProfileDAC {
       .remoteHandle()
       .call("getProfile",{test:"test"});
   }
-  public async getPreferance(): Promise<any> {
+
+  public async getPreference(): Promise<any> {
     if (!this.connector) {
       throw new Error("Connector not initialized");
     }
     return await this.connector.connection
       .remoteHandle()
-      .call("getPreferance",{test:"test"});
+      .call("getPreference",{test:"test"});
   }
+  
   public async getProfileHistory(): Promise<any> {
     if (!this.connector) {
       throw new Error("Connector not initialized");
@@ -70,13 +62,13 @@ export class UserProfileDAC extends DacLibrary implements IUserProfileDAC {
       .remoteHandle()
       .call("getProfileHistory",{test:"test"});
   }
-  public async getPreferanceHistory(): Promise<any> {
+  public async getPreferenceHistory(): Promise<any> {
     if (!this.connector) {
       throw new Error("Connector not initialized");
     }
     return await this.connector.connection
       .remoteHandle()
-      .call("getPrefHistory",{test:"test"});
+      .call("getPreferenceHistory",{test:"test"});
   }
 
   public getPermissions(): Permission[] {
