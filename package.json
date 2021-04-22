@@ -1,6 +1,6 @@
 {
   "name": "@kbiswas/userprofile-record-library",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "This library exposes a class that wraps the User Profile DAC, created and hosted by SkynetNet Hub.",
   "main": "dist/index.js",
   "type": "module",
@@ -13,6 +13,9 @@
   },
   "author": "Kushal Biswas",
   "license": "MIT",
+  "repository": {
+    "url": "https://github.com/skynethubio/userprofile-record-library"
+  },
   "bugs": {
     "url": "https://github.com/skynethubio/userprofile-record-library/issues"
   },
