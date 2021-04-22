@@ -24,6 +24,32 @@ export class UserProfileDAC extends DacLibrary implements IUserProfileDAC {
       .call("setProfile", data);
   }
 
+  public async getProfile(): Promise<any> {
+    if (!this.connector) {
+      throw new Error("Connector not initialized");
+    }
+    return await this.connector.connection
+      .remoteHandle()
+      .call("getProfile",{test:"test"});
+  }
+
+  public async getProfileHistory(): Promise<any> {
+    if (!this.connector) {
+      throw new Error("Connector not initialized");
+    }
+    return await this.connector.connection
+      .remoteHandle()
+      .call("getProfileHistory",{test:"test"});
+  }
+  
+  public async getPreference(): Promise<any> {
+    if (!this.connector) {
+      throw new Error("Connector not initialized");
+    }
+    return await this.connector.connection
+      .remoteHandle()
+      .call("getPreference",{test:"test"});
+  }
   public async setPreference(data: Preference): Promise<ICreateDACResponse> {
     if (!this.connector) {
       throw new Error("Connector not initialized");
@@ -36,32 +62,6 @@ export class UserProfileDAC extends DacLibrary implements IUserProfileDAC {
       .call("setPreference", data);
   }
 
-  public async getProfile(): Promise<any> {
-    if (!this.connector) {
-      throw new Error("Connector not initialized");
-    }
-    return await this.connector.connection
-      .remoteHandle()
-      .call("getProfile",{test:"test"});
-  }
-
-  public async getPreference(): Promise<any> {
-    if (!this.connector) {
-      throw new Error("Connector not initialized");
-    }
-    return await this.connector.connection
-      .remoteHandle()
-      .call("getPreference",{test:"test"});
-  }
-  
-  public async getProfileHistory(): Promise<any> {
-    if (!this.connector) {
-      throw new Error("Connector not initialized");
-    }
-    return await this.connector.connection
-      .remoteHandle()
-      .call("getProfileHistory",{test:"test"});
-  }
   public async getPreferenceHistory(): Promise<any> {
     if (!this.connector) {
       throw new Error("Connector not initialized");
