@@ -27,7 +27,7 @@ export interface ICreateDACResponse {
 export interface IUserProfileDAC {
  setProfile(data:Profile):Promise<ICreateDACResponse>;
  getProfile():Promise<any>;
- getProfileHistory(data:string):Promise<any>;
+ getProfileHistory():Promise<any>;
 
  getPreference(): Promise<any>;
  setPreference(data: Preference):Promise<ICreateDACResponse>;
