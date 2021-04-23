@@ -1,17 +1,17 @@
-import { Preference, Profile } from "./types";
+import { IUserPreferences, IUserProfile} from "./types";
 
 // and asserts the results of JSON.parse at runtime
 export class Convert {
-    public static toProfile(json: string): Profile {
-        return cast(JSON.parse(json), r("Profile"));
+    public static toProfile(json: string): IUserProfile {
+        return cast(JSON.parse(json), r("IUserProfile"));
     }
-    public static toPreference(json: string): Preference {
-        return cast(JSON.parse(json), r("Preference"));
+    public static toPreferences(json: string): IUserPreferences {
+        return cast(JSON.parse(json), r("IUserPreferences"));
     }
     
 
-    public static profileToJson(value: Profile): string {
-        return JSON.stringify(uncast(value, r("Profile")), null, 2);
+    public static profileToJson(value: IUserProfile): string {
+        return JSON.stringify(uncast(value, r("IUserProfile")), null, 2);
     }
 }
 
@@ -148,7 +148,7 @@ function r(name: string) {
 }
 
 const typeMap: any = {
-    "Profile": o([
+    "IUserProfile": o([
         { json: "username", js: "username", typ: u(undefined, "") }, 
         { json: "location", js: "location", typ: u(undefined, "") },
         { json: "aboutMe", js: "aboutMe", typ: u(undefined, "") },
@@ -156,6 +156,6 @@ const typeMap: any = {
         { json: "avatar", js: "avatar", typ: u(undefined, []) },
     ]
     , "any"),
-    "Preference": o([ { json: "darkmode", js: "darkmode", typ: u(undefined, "") }, 
+    "IUserPreferences": o([ { json: "darkmode", js: "darkmode", typ: u(undefined, "") }, 
     { json: "portal", js: "portal", typ: u(undefined, "") }],"any"),
 };
