@@ -23,30 +23,41 @@ perform the following types of actions. This is when a user
 
 ```typescript
 export interface IUserProfileDAC {
- setProfile(data:Profile):Promise<ICreateDACResponse>;
- getProfile():Promise<any>;
- getProfileHistory():Promise<any>;
+  setProfile(data: IUserProfile): Promise<ICreateDACResponse>;
+  setPreferences(data: IUserPreferences): Promise<ICreateDACResponse>;
 
- getPreference(): Promise<any>;
- setPreference(data: Preference):Promise<ICreateDACResponse>;
- getPreferenceHistory(): Promise<any>
+  //getProfile(): Promise<any>;
+  getProfile(userID:string,options:IProfileOptions): Promise<any>;
+  getProfileHistory(userID: string): Promise<any>;
+  getPreferences(userID:string,options:IPreferencesOptions): Promise<any>;
+  getPreferencesHistory(userID: string): Promise<any>
 }
-export interface Avatar {
+
+export interface IUserProfile {
+  version: number,
+  username: string,
+  aboutMe?: string,
+  location?: string,
+  topics?: string[],
+  avatar?: IAvatar[]
+}
+export interface IAvatar {
   ext: string,
   w: number,
   h: number,
   url: string
 }
-export interface Profile {
-  username: string,
-  aboutMe?: string,
-  location?: string,
-  topics?: string[],
-  avatar?: Avatar[]
+export interface IProfileOptions{
+  ipd?:string,
+  skapp?:string
 }
-export interface Preference {
+export interface IUserPreferences {
+  version: number,
   darkmode?: boolean,
   portal?: string
+}
+export interface IPreferencesOptions{
+  skapp?:string
 }
 export interface ICreateDACResponse {
   submitted: boolean;
@@ -72,12 +83,15 @@ import { ContentRecordDAC } from "skynet-content-record-library";
 
   // load mysky
   const mySky = await client.loadMySky("exampleskapp.hns");
-
+  
+  // get userID
+  const userID = await mySky.userID()
+  
   // load DACs
   await mySky.loadDacs(userProfileRecord);
 
-  let userProfile =await mySky.getProfile();
-  let userPreference =await mySky.getPreference();
+  let userProfile =await mySky.getProfile(userID);
+  let userPreference =await mySky.getPreference(userID);
 
 
 

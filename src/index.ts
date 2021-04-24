@@ -9,22 +9,24 @@ const DAC_DOMAIN = "skyuser.hns";
 const VERSION = 1;
 const PROFILE_INDEX_PATH = `${DAC_DOMAIN}/profileIndex.json`;
 const PREFERENCES_INDEX_PATH = `${DAC_DOMAIN}/preferencesIndex.json`;
+const DEBUG_ENABLED = "true";
 
 // PREFERENCES_PATH: `${DAC_DOMAIN}/${skapp}/preferences.json`,
 // PROFILE_PATH: `${DAC_DOMAIN}/${skapp}/userprofile.json`,
 // PROFILE_INDEX_PATH: `${DAC_DOMAIN}/profileIndex.json`,
 // PREFERENCES_INDEX_PATH: `${DAC_DOMAIN}/preferencesIndex.json`
 export class UserProfileDAC extends DacLibrary implements IUserProfileDAC {
+  private client: SkynetClient
+
   public constructor() {
     super(DAC_DOMAIN);
+    this.client = new SkynetClient("https://siasky.net");
   }
 
-  client: SkynetClient | undefined
-
-  async init(client: SkynetClient, customOptions: CustomConnectorOptions): Promise<void> {
-    this.client = client;
-    return super.init(client, customOptions);
-  }
+  // async init(client: SkynetClient, customOptions: CustomConnectorOptions): Promise<void> {
+  //   this.client = client;
+  //   return super.init(client, customOptions);
+  // }
 
   // ************************************************************************/
   // **** DAC Methods: All Set Methods must be called and executed in DAC ***/
@@ -63,25 +65,14 @@ export class UserProfileDAC extends DacLibrary implements IUserProfileDAC {
    * @param options need to pass {ipd:"SkyId"} for skyId profiles
    * @returns Promise<any> the last saved users profile data
    */
-  public async getProfile(userID: string, options: IProfileOptions): Promise<any> {
+  public async getProfile(userID: string, options?: IProfileOptions): Promise<any> {
     if (typeof this.client === "undefined") {
       throw Error('userprofile-library: SkynetClient not initialized')
     }
     try {
       // check if we need to pull "SkyID" (legancy login) profile
       if (options != null && options != undefined && options.ipd == "SkyId") {
-        console.log('Got SkyId params checking SkyID');
-        // get "Skapp" name which updated profile last.
-        let oldData: any = await this.client.db.getJSON(userID, "profile")
-        let userProfile: IUserProfile = {
-          version: VERSION,
-          username: oldData.username,
-          aboutMe: oldData.aboutMe,
-          location: oldData.location || "",
-          topics: oldData.tags || [],
-          avatar: oldData.avatar || []
-        }
-        return userProfile;
+        return await this.getSkyIdUserProfile(userID);
       }
       else { // By default get "MySky" Profile
         let lastSkapp = null;
@@ -97,18 +88,51 @@ export class UserProfileDAC extends DacLibrary implements IUserProfileDAC {
         if (lastSkapp != null) {
           // download profile json from Skapp folder and return
           const LATEST_PROFILE_PATH = `${DAC_DOMAIN}/${lastSkapp}/userprofile.json`;
-          return await this.downloadFile(userID, LATEST_PROFILE_PATH);
+          let profileData: IUserProfile | null = await this.downloadFile(userID, LATEST_PROFILE_PATH);
+          if (profileData && profileData.username == "" && profileData.aboutMe == "" && profileData.avatar && profileData.avatar.length == 0 && profileData.location == "") {
+            profileData = await this.getSkyIdUserProfile(userID);
+          }
+          return profileData;
         }
-        else {// return empty profile
-          return this.getInitialProfile();
+        else {// return skyId profile or empty profile
+          let profileData = await this.getSkyIdUserProfile(userID);
+          if (!profileData) {
+            profileData = await this.getInitialProfile();
+          }
+          return profileData;
         }
       }
     } catch (error) {
-      console.log('Error occurred trying to get profile data, err: ', error);
+      this.log('Error occurred trying to get profile data, err: ', error);
       return { error: error }
     }
   }
 
+  private async getSkyIdUserProfile(userID: any): Promise<any> {
+    this.log(' *** MySky userprofile doesnt exist, get SkyID userprofile data **');
+    let userProfile: IUserProfile | null = null;
+    try {
+      // get "Skapp" name which updated profile last.
+      //let oldData: any = await this.client.db.getJSON(userID, "profile");
+      const result : any|null = await this.client.registry.getEntryUrl(userID, "profile");
+      this.log(' *** result :'+result);
+      this.log(' *** result.entry :'+result.entry);
+      const data: any = await this.client.getFileContent(result.entry.data);
+      const skyIdProfile: any = JSON.parse(data);
+      userProfile = {
+        version: VERSION,
+        username: skyIdProfile.username,
+        aboutMe: skyIdProfile.aboutMe,
+        location: skyIdProfile.location || "",
+        topics: skyIdProfile.tags || [],
+        avatar: skyIdProfile.avatar || []
+      }
+    }
+    catch (error) {
+      this.log('Error occurred trying to get SkyID profile data, err: ', error);
+    }
+    return userProfile;
+  }
   /**
    * This method is used to retrive users profile information update History. accross all skapps using this dac
    * @param data need to pass a dummy data for remotemethod call sample {test:"test"}
@@ -123,7 +147,7 @@ export class UserProfileDAC extends DacLibrary implements IUserProfileDAC {
       let indexData: any = await this.downloadFile(userID, PROFILE_INDEX_PATH);
       return indexData.historyLog;
     } catch (error) {
-      console.log('Error occurred trying to record new content, err: ', error)
+      this.log('Error occurred trying to record new content, err: ', error)
       return { error: error }
     }
   }
@@ -157,7 +181,7 @@ export class UserProfileDAC extends DacLibrary implements IUserProfileDAC {
         return this.getInitialPrefrences();
       }
     } catch (error) {
-      console.log('Error occurred trying to record new content, err: ', error)
+      this.log('Error occurred trying to record new content, err: ', error)
       return { error: error }
     }
   }
@@ -176,7 +200,7 @@ export class UserProfileDAC extends DacLibrary implements IUserProfileDAC {
       let indexData: any = await this.downloadFile(userID, PREFERENCES_INDEX_PATH);
       return indexData.historyLog;
     } catch (error) {
-      console.log('Error occurred trying to record new content, err: ', error)
+      this.log('Error occurred trying to record new content, err: ', error)
       return { error: error }
     }
   }
@@ -205,13 +229,13 @@ export class UserProfileDAC extends DacLibrary implements IUserProfileDAC {
     if (typeof this.client === "undefined") {
       throw Error('userprofile-library: SkynetClient not initialized')
     }
-    console.log('downloading file at path', path)
+    this.log('downloading file at path', path)
     const { data } = await this.client.file.getJSON(userID, path)
     if (!data) {
-      console.log('no data found at path', path)
+      this.log('no data found at path', path)
       return null;
     }
-    console.log('data found at path', path, data)
+    this.log('data found at path', path, data)
     return data as unknown as T
   }
 
@@ -231,6 +255,13 @@ export class UserProfileDAC extends DacLibrary implements IUserProfileDAC {
       version: VERSION,
       darkmode: false,
       portal: "https://siasky.net"
+    }
+  }
+
+  // log prints to stdout only if DEBUG_ENABLED flag is set
+  private log(message: string, ...optionalContext: any[]) {
+    if (DEBUG_ENABLED) {
+      console.log("UserProfileDAC Library :: " + message, ...optionalContext)
     }
   }
 

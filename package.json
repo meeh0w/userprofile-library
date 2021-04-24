@@ -1,5 +1,5 @@
 {
-  "name": "@skynethub/userprofile-record-library",
+  "name": "@skynethub/userprofile-library",
   "version": "0.1.0-beta",
   "description": "This library exposes a class that wraps the User Profile DAC, created and hosted by SkynetHub.",
   "main": "dist/index.js",
@@ -14,12 +14,12 @@
   "author": "Skynet Hub",
   "license": "MIT",
   "repository": {
-    "url": "https://github.com/skynethubio/userprofile-record-library"
+    "url": "https://github.com/skynethubio/userprofile-library"
   },
   "bugs": {
-    "url": "https://github.com/skynethubio/userprofile-record-library/issues"
+    "url": "https://github.com/skynethubio/userprofile-library/issues"
   },
-  "homepage": "https://github.com/skynethubio/userprofile-record-library#readme",
+  "homepage": "https://github.com/skynethubio/userprofile-library#readme",
   "publishConfig": {
     "access": "public"
   },
