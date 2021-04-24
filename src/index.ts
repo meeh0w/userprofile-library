@@ -85,8 +85,8 @@ export class UserProfileDAC extends DacLibrary implements IUserProfileDAC {
       }
       else { // By default get "MySky" Profile
         let lastSkapp = null;
-        if (options && options?.skapp) {
-          lastSkapp = options?.skapp;
+        if (options && options.skapp) {
+          lastSkapp = options.skapp;
         }
         else {
           // get "Skapp" name which updated profile last. 
@@ -139,8 +139,8 @@ export class UserProfileDAC extends DacLibrary implements IUserProfileDAC {
     }
     try {
       let lastSkapp = null;
-      if (options && options?.skapp) {
-        lastSkapp = options?.skapp;
+      if (options && options.skapp) {
+        lastSkapp = options.skapp;
       }
       else {
         // get "Skapp" name which updated preference last.
