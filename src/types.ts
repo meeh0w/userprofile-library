@@ -1,9 +1,3 @@
-export interface IAvatar {
-  ext: string,
-  w: number,
-  h: number,
-  url: string
-}
 export interface IUserProfile {
   version: number,
   username: string,
@@ -12,14 +6,20 @@ export interface IUserProfile {
   topics?: string[],
   avatar?: IAvatar[]
 }
-export interface IUserPreferences {
-  version: number,
-  darkmode?: boolean,
-  portal?: string
+export interface IAvatar {
+  ext: string,
+  w: number,
+  h: number,
+  url: string
 }
 export interface IProfileOptions{
   ipd?:string,
   skapp?:string
+}
+export interface IUserPreferences {
+  version: number,
+  darkmode?: boolean,
+  portal?: string
 }
 export interface IPreferencesOptions{
   skapp?:string
@@ -36,5 +36,5 @@ export interface IUserProfileDAC {
   getProfile(userID:string,options:IProfileOptions): Promise<any>;
   getProfileHistory(userID: string): Promise<any>;
   getPreferences(userID:string,options:IPreferencesOptions): Promise<any>;
-  getPreferencesHistory(userID: string): Promise<any>
+  getPreferencesHistory(userID:string): Promise<any>
 }
