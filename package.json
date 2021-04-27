@@ -1,6 +1,6 @@
 {
   "name": "@skynethub/userprofile-library",
-  "version": "0.1.0-beta",
+  "version": "0.1.1-beta",
   "description": "This library exposes a class that wraps the User Profile DAC, created and hosted by SkynetHub.",
   "main": "dist/index.js",
   "type": "module",

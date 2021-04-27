@@ -114,7 +114,7 @@ export class UserProfileDAC extends DacLibrary implements IUserProfileDAC {
     try {
       // get "Skapp" name which updated profile last.
       //let oldData: any = await this.client.db.getJSON(userID, "profile");
-      const result : any|null = await this.client.registry.getEntryUrl(userID, "profile");
+      const result : any|null = await this.client.registry.getEntry(userID, "profile");
       this.log(' *** result :'+result);
       this.log(' *** result.entry :'+result.entry);
       if(result != null && result != undefined && result.entry != undefined && result.entry != null)
