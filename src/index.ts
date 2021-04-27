@@ -117,15 +117,22 @@ export class UserProfileDAC extends DacLibrary implements IUserProfileDAC {
       const result : any|null = await this.client.registry.getEntryUrl(userID, "profile");
       this.log(' *** result :'+result);
       this.log(' *** result.entry :'+result.entry);
-      const data: any = await this.client.getFileContent(result.entry.data);
-      const skyIdProfile: any = JSON.parse(data);
-      userProfile = {
-        version: VERSION,
-        username: skyIdProfile.username,
-        aboutMe: skyIdProfile.aboutMe,
-        location: skyIdProfile.location || "",
-        topics: skyIdProfile.tags || [],
-        avatar: skyIdProfile.avatar || []
+      if(result != null && result != undefined && result.entry != undefined && result.entry != null)
+      {
+        const data: any = await this.client.getFileContent(result.entry.data);
+        const skyIdProfile: any = JSON.parse(data);
+        userProfile = {
+          version: VERSION,
+          username: skyIdProfile.username,
+          aboutMe: skyIdProfile.aboutMe,
+          location: skyIdProfile.location || "",
+          topics: skyIdProfile.tags || [],
+          avatar: skyIdProfile.avatar || []
+        }
+      }
+      else
+      {
+        userProfile = await this.getInitialProfile();
       }
     }
     catch (error) {
