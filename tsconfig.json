@@ -1,14 +1,15 @@
 {
   "compilerOptions": {
-    "moduleResolution": "node",
     "esModuleInterop": true,
     "strict": true,
     "noImplicitAny": true,
+    "declaration": true,
+    "declarationMap": true,
     "isolatedModules": true,
-    "sourceMap": true,
-    "strictNullChecks": true,
-    "strictPropertyInitialization": false,
-    "target": "esnext"
+    "outDir": "dist/esm",
+    "moduleResolution": "node",
+    "target": "es2019",
+    "types": ["node"]
   },
   "include": ["src/**/*"],
   "exclude": ["node_modules"]

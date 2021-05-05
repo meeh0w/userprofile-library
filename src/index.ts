@@ -5,7 +5,7 @@ import {
   ICreateDACResponse, IUserProfileDAC, IProfileOptions, IUserProfile, IPreferencesOptions, IUserPreferences,
 } from "./types";
 
-const DAC_DOMAIN = "skyuser.hns";
+const DAC_DOMAIN = "profile-dac.hns";
 const VERSION = 1;
 const PROFILE_INDEX_PATH = `${DAC_DOMAIN}/profileIndex.json`;
 const PREFERENCES_INDEX_PATH = `${DAC_DOMAIN}/preferencesIndex.json`;
@@ -115,12 +115,12 @@ export class UserProfileDAC extends DacLibrary implements IUserProfileDAC {
       // get "Skapp" name which updated profile last.
       //let oldData: any = await this.client.db.getJSON(userID, "profile");
       const result : any|null = await this.client.registry.getEntry(userID, "profile");
-      this.log(' *** result :'+result);
-      this.log(' *** result.entry :'+result.entry);
+      this.log(' #### SkyID getEntry : result.entry :'+result.entry);
       if(result != null && result != undefined && result.entry != undefined && result.entry != null)
       {
-        const data: any = await this.client.getFileContent(result.entry.data);
-        const skyIdProfile: any = JSON.parse(data);
+        const  contentObj: any = await this.client.getFileContent(result.entry.data);
+        this.log(' #### SkyID Profile Data :'+contentObj.data);
+        const skyIdProfile: any = JSON.parse(contentObj.data);
         userProfile = {
           version: VERSION,
           username: skyIdProfile.username,
