@@ -2,11 +2,11 @@ import { DacLibrary, MySky, CustomConnectorOptions, SkynetClient } from "skynet-
 import { PermCategory, Permission, PermType } from "skynet-mysky-utils";
 import { Convert } from "./skystandards"
 import {
-  ICreateDACResponse, IUserProfileDAC, IProfileOptions, IUserProfile, IPreferencesOptions, IUserPreferences,
+  VERSION, DEFAULT_PREFERENCES, DEFAULT_USER_PROFILE, IDACResponse, IUserProfileDAC, IProfileOptions, IUserProfile, IPreferencesOptions, IUserPreferences, IProfileIndex
 } from "./types";
 
 const DAC_DOMAIN = "profile-dac.hns";
-const VERSION = 1;
+
 const PROFILE_INDEX_PATH = `${DAC_DOMAIN}/profileIndex.json`;
 const PREFERENCES_INDEX_PATH = `${DAC_DOMAIN}/preferencesIndex.json`;
 const DEBUG_ENABLED = "true";
@@ -31,7 +31,7 @@ export class UserProfileDAC extends DacLibrary implements IUserProfileDAC {
   // ************************************************************************/
   // **** DAC Methods: All Set Methods must be called and executed in DAC ***/
   // ************************************************************************/
-  public async setProfile(data: IUserProfile): Promise<ICreateDACResponse> {
+  public async setProfile(data: IUserProfile): Promise<IDACResponse> {
     if (!this.connector) {
       throw new Error("Connector not initialized");
     }
@@ -43,7 +43,19 @@ export class UserProfileDAC extends DacLibrary implements IUserProfileDAC {
       .call("setProfile", data);
   }
 
-  public async setPreferences(data: IUserPreferences): Promise<ICreateDACResponse> {
+  public async updateProfile(data: IUserProfile): Promise<IDACResponse> {
+    if (!this.connector) {
+      throw new Error("Connector not initialized");
+    }
+    if (typeof data === 'string') {
+      data = Convert.toProfile(data);
+    }
+    return await this.connector.connection
+      .remoteHandle()
+      .call("updateProfile", data);
+  }
+
+  public async setPreferences(data: IUserPreferences): Promise<IDACResponse> {
     if (!this.connector) {
       throw new Error("Connector not initialized");
     }
@@ -70,37 +82,39 @@ export class UserProfileDAC extends DacLibrary implements IUserProfileDAC {
       throw Error('userprofile-library: SkynetClient not initialized')
     }
     try {
+      let profileData = null;
       // check if we need to pull "SkyID" (legancy login) profile
       if (options != null && options != undefined && options.ipd == "SkyId") {
         return await this.getSkyIdUserProfile(userID);
       }
       else { // By default get "MySky" Profile
-        let lastSkapp = null;
+        // Skapp Specific Update
         if (options && options.skapp) {
-          lastSkapp = options.skapp;
-        }
-        else {
-          // get "Skapp" name which updated profile last. 
-          lastSkapp = await this.getLastestProfileSkapp(userID);
-        }
-        // null mean profile is not initilaized correctly. 
-        // Ideally this shouldn't happen, since we are initializing empty profile  at first MySky login
-        if (lastSkapp != null) {
-          // download profile json from Skapp folder and return
+          const lastSkapp = options.skapp;
           const LATEST_PROFILE_PATH = `${DAC_DOMAIN}/${lastSkapp}/userprofile.json`;
           let profileData: IUserProfile | null = await this.downloadFile(userID, LATEST_PROFILE_PATH);
-          if (profileData && profileData.username == "" && profileData.aboutMe == "" && profileData.avatar && profileData.avatar.length == 0 && profileData.location == "") {
-            profileData = await this.getSkyIdUserProfile(userID);
-          }
           return profileData;
         }
-        else {// return skyId profile or empty profile
-          let profileData = await this.getSkyIdUserProfile(userID);
-          if (!profileData) {
-            profileData = await this.getInitialProfile();
+        else {//latest profile
+          const LATEST_PROFILE_PATH = `${DAC_DOMAIN}/profileIndex.json`;
+          let profileIndexData: IProfileIndex | null = await this.downloadFile(userID, LATEST_PROFILE_PATH);
+          if (profileIndexData != null && profileIndexData.profile != null) {
+            profileData = profileIndexData.profile;
+            //check SkyID
+            if (profileData && profileData.username == "" && profileData.aboutMe == "" && profileData.avatar && profileData.avatar.length == 0 && profileData.location == "") {
+              profileData = await this.getSkyIdUserProfile(userID);
+              return profileData;// users SkyID profile data
+            }
+            return profileData;// users latest profile data
           }
-          return profileData;
         }
+      }
+      if (profileData == null) {// return skyId profile or empty profile
+        let profileData = await this.getSkyIdUserProfile(userID);
+        if (!profileData) {
+          profileData = DEFAULT_USER_PROFILE;
+        }
+        return profileData;
       }
     } catch (error) {
       this.log('Error occurred trying to get profile data, err: ', error);
@@ -114,12 +128,11 @@ export class UserProfileDAC extends DacLibrary implements IUserProfileDAC {
     try {
       // get "Skapp" name which updated profile last.
       //let oldData: any = await this.client.db.getJSON(userID, "profile");
-      const result : any|null = await this.client.registry.getEntry(userID, "profile");
-      this.log(' #### SkyID getEntry : result.entry :'+result.entry);
-      if(result != null && result != undefined && result.entry != undefined && result.entry != null)
-      {
-        const  contentObj: any = await this.client.getFileContent(result.entry.data);
-        this.log(' #### SkyID Profile Data :'+contentObj.data);
+      const result: any | null = await this.client.registry.getEntry(userID, "profile");
+      this.log(' #### SkyID getEntry : result.entry :' + result.entry);
+      if (result != null && result != undefined && result.entry != undefined && result.entry != null) {
+        const contentObj: any = await this.client.getFileContent(result.entry.data);
+        this.log(' #### SkyID Profile Data :' + contentObj.data);
         const skyIdProfile: any = JSON.parse(contentObj.data);
         userProfile = {
           version: VERSION,
@@ -130,9 +143,8 @@ export class UserProfileDAC extends DacLibrary implements IUserProfileDAC {
           avatar: skyIdProfile.avatar || []
         }
       }
-      else
-      {
-        userProfile = await this.getInitialProfile();
+      else {
+        userProfile = DEFAULT_USER_PROFILE;
       }
     }
     catch (error) {
@@ -185,7 +197,7 @@ export class UserProfileDAC extends DacLibrary implements IUserProfileDAC {
         return await this.downloadFile(userID, LATEST_PREF_PATH);
       }
       else {
-        return this.getInitialPrefrences();
+        return DEFAULT_PREFERENCES;
       }
     } catch (error) {
       this.log('Error occurred trying to record new content, err: ', error)
@@ -234,7 +246,7 @@ export class UserProfileDAC extends DacLibrary implements IUserProfileDAC {
   // repeating the awkward "as unknown as T" everywhere
   private async downloadFile<T>(userID: string, path: string): Promise<T | null> {
     if (typeof this.client === "undefined") {
-      throw Error('userprofile-library: SkynetClient not initialized')
+      throw Error('UserProfileDAC Library :: SkynetClient not initialized')
     }
     this.log('downloading file at path', path)
     const { data } = await this.client.file.getJSON(userID, path)
@@ -244,25 +256,6 @@ export class UserProfileDAC extends DacLibrary implements IUserProfileDAC {
     }
     this.log('data found at path', path, data)
     return data as unknown as T
-  }
-
-  private getInitialProfile() {
-    return {
-      version: VERSION,
-      username: "",
-      aboutMe: "",
-      location: "",
-      topics: [],
-      avatar: []
-    }
-  }
-
-  private getInitialPrefrences() {
-    return {
-      version: VERSION,
-      darkmode: false,
-      portal: "https://siasky.net"
-    }
   }
 
   // log prints to stdout only if DEBUG_ENABLED flag is set
@@ -288,44 +281,4 @@ export class UserProfileDAC extends DacLibrary implements IUserProfileDAC {
       ),
     ];
   }
-  //////////////////////
-
-  // public async getProfile(): Promise<any> {
-  //   if (!this.connector) {
-  //     throw new Error("Connector not initialized");
-  //   }
-  //   return await this.connector.connection
-  //     .remoteHandle()
-  //     .call("getProfile",{test:"test"});
-  // }
-
-  // public async getProfileHistory(): Promise<any> {
-  //   if (!this.connector) {
-  //     throw new Error("Connector not initialized");
-  //   }
-  //   return await this.connector.connection
-  //     .remoteHandle()
-  //     .call("getProfileHistory",{test:"test"});
-  // }
-
-  // public async getPreferences(): Promise<any> {
-  //   if (!this.connector) {
-  //     throw new Error("Connector not initialized");
-  //   }
-  //   return await this.connector.connection
-  //     .remoteHandle()
-  //     .call("getPreferences",{test:"test"});
-  // }
-
-  // public async getPreferencesHistory(): Promise<any> {
-  //   if (!this.connector) {
-  //     throw new Error("Connector not initialized");
-  //   }
-  //   return await this.connector.connection
-  //     .remoteHandle()
-  //     .call("getPreferencesHistory",{test:"test"});
-  // }
-
-
-
 }
