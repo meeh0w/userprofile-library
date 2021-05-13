@@ -20,7 +20,7 @@ export class UserProfileDAC extends DacLibrary implements IUserProfileDAC {
 
   public constructor() {
     super(DAC_DOMAIN);
-    this.client = new SkynetClient("https://siasky.net");
+    this.client = new SkynetClient();
   }
 
   // async init(client: SkynetClient, customOptions: CustomConnectorOptions): Promise<void> {
