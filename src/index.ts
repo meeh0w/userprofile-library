@@ -1,4 +1,4 @@
-import { DacLibrary, MySky, CustomConnectorOptions, SkynetClient } from "skynet-js";
+import {stringToUint8ArrayUtf8, uint8ArrayToStringUtf8, DacLibrary, MySky, CustomConnectorOptions, SkynetClient } from "skynet-js";
 import { PermCategory, Permission, PermType } from "skynet-mysky-utils";
 import { Convert } from "./skystandards"
 import {
@@ -6,10 +6,16 @@ import {
 } from "./types";
 
 const DAC_DOMAIN = "profile-dac.hns";
+//const DAC_DOMAIN = "localhost";
 
 const PROFILE_INDEX_PATH = `${DAC_DOMAIN}/profileIndex.json`;
 const PREFERENCES_INDEX_PATH = `${DAC_DOMAIN}/preferencesIndex.json`;
 const DEBUG_ENABLED = "true";
+
+// We'll define a portal to allow for developing on localhost.
+// When hosted on a skynet portal, SkynetClient doesn't need any arguments.
+const portal =
+  window.location.hostname === 'localhost' ? 'https://siasky.net' : undefined;
 
 // PREFERENCES_PATH: `${DAC_DOMAIN}/${skapp}/preferences.json`,
 // PROFILE_PATH: `${DAC_DOMAIN}/${skapp}/userprofile.json`,
@@ -20,7 +26,7 @@ export class UserProfileDAC extends DacLibrary implements IUserProfileDAC {
 
   public constructor() {
     super(DAC_DOMAIN);
-    this.client = new SkynetClient();
+    this.client = new SkynetClient(portal);
   }
 
   // async init(client: SkynetClient, customOptions: CustomConnectorOptions): Promise<void> {
@@ -85,7 +91,8 @@ export class UserProfileDAC extends DacLibrary implements IUserProfileDAC {
       let profileData = null;
       // check if we need to pull "SkyID" (legancy login) profile
       if (options != null && options != undefined && options.ipd == "SkyId") {
-        return await this.getSkyIdUserProfile(userID);
+        //return await this.getSkyIdUserProfile(userID);
+        return DEFAULT_USER_PROFILE;
       }
       else { // By default get "MySky" Profile
         // Skapp Specific Update
@@ -102,19 +109,15 @@ export class UserProfileDAC extends DacLibrary implements IUserProfileDAC {
             profileData = profileIndexData.profile;
             //check SkyID
             if (profileData && profileData.username == "" && profileData.aboutMe == "" && profileData.avatar && profileData.avatar.length == 0 && profileData.location == "") {
-              profileData = await this.getSkyIdUserProfile(userID);
-              return profileData;// users SkyID profile data
+              return DEFAULT_USER_PROFILE;// RETURN DEFAULT profile data
+              //return profileData;
             }
             return profileData;// users latest profile data
           }
         }
       }
       if (profileData == null) {// return skyId profile or empty profile
-        let profileData = await this.getSkyIdUserProfile(userID);
-        if (!profileData) {
-          profileData = DEFAULT_USER_PROFILE;
-        }
-        return profileData;
+        return DEFAULT_USER_PROFILE;
       }
     } catch (error) {
       this.log('Error occurred trying to get profile data, err: ', error);
@@ -122,36 +125,36 @@ export class UserProfileDAC extends DacLibrary implements IUserProfileDAC {
     }
   }
 
-  private async getSkyIdUserProfile(userID: any): Promise<any> {
-    this.log(' *** MySky userprofile doesnt exist, get SkyID userprofile data **');
-    let userProfile: IUserProfile | null = null;
-    try {
-      // get "Skapp" name which updated profile last.
-      //let oldData: any = await this.client.db.getJSON(userID, "profile");
-      const result: any | null = await this.client.registry.getEntry(userID, "profile");
-      this.log(' #### SkyID getEntry : result.entry :' + result.entry);
-      if (result != null && result != undefined && result.entry != undefined && result.entry != null) {
-        const contentObj: any = await this.client.getFileContent(result.entry.data);
-        this.log(' #### SkyID Profile Data :' + contentObj.data);
-        const skyIdProfile: any = JSON.parse(contentObj.data);
-        userProfile = {
-          version: VERSION,
-          username: skyIdProfile.username,
-          aboutMe: skyIdProfile.aboutMe,
-          location: skyIdProfile.location || "",
-          topics: skyIdProfile.tags || [],
-          avatar: skyIdProfile.avatar || []
-        }
-      }
-      else {
-        userProfile = DEFAULT_USER_PROFILE;
-      }
-    }
-    catch (error) {
-      this.log('Error occurred trying to get SkyID profile data, err: ', error);
-    }
-    return userProfile;
-  }
+  // private async getSkyIdUserProfile(userID: any): Promise<any> {
+  //   this.log(' *** MySky userprofile doesnt exist, get SkyID userprofile data **');
+  //   let userProfile: IUserProfile | null = null;
+  //   try {
+  //     // get "Skapp" name which updated profile last.
+  //     //let oldData: any = await this.client.db.getJSON(userID, "profile");
+  //     const result: any | null = await this.client.registry.getEntry(userID, "profile");
+  //     this.log(' #### SkyID getEntry : result.entry :' + result.entry);
+  //     if (result != null && result != undefined && result.entry != undefined && result.entry != null) {
+  //       const contentObj: any = await this.client.getFileContent(result.entry.data);
+  //       this.log(' #### SkyID Profile Data :' + contentObj.data);
+  //       const skyIdProfile: any = JSON.parse(contentObj.data);
+  //       userProfile = {
+  //         version: VERSION,
+  //         username: skyIdProfile.username,
+  //         aboutMe: skyIdProfile.aboutMe,
+  //         location: skyIdProfile.location || "",
+  //         topics: skyIdProfile.tags || [],
+  //         avatar: skyIdProfile.avatar || []
+  //       }
+  //     }
+  //     else {
+  //       userProfile = DEFAULT_USER_PROFILE;
+  //     }
+  //   }
+  //   catch (error) {
+  //     this.log('Error occurred trying to get SkyID profile data, err: ', error);
+  //   }
+  //   return userProfile;
+  // }
   /**
    * This method is used to retrive users profile information update History. accross all skapps using this dac
    * @param data need to pass a dummy data for remotemethod call sample {test:"test"}
