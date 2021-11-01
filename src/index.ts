@@ -1,13 +1,15 @@
-import {stringToUint8ArrayUtf8, uint8ArrayToStringUtf8, DacLibrary, MySky, CustomConnectorOptions, SkynetClient } from "skynet-js";
+import { stringToUint8ArrayUtf8, uint8ArrayToStringUtf8, DacLibrary, MySky, CustomConnectorOptions, SkynetClient } from "skynet-js";
 import { PermCategory, Permission, PermType } from "skynet-mysky-utils";
 import { Convert } from "./skystandards"
 import {
-  VERSION, DEFAULT_PREFERENCES, DEFAULT_USER_PROFILE, IDACResponse, IUserProfileDAC, IProfileOptions, IUserProfile, IPreferencesOptions, IUserPreferences, IProfileIndex
+  VERSION, DEFAULT_PREFERENCES, DEFAULT_USER_STATUS, DEFAULT_USER_PROFILE, IDACResponse, IUserProfileDAC, IProfileOptions, IUserProfile, IPreferencesOptions, IUserPreferences, IProfileIndex
 } from "./types";
+import { fromByteArray, toByteArray } from "base64-js";
 
 const DAC_DOMAIN = "profile-dac.hns";
 //const DAC_DOMAIN = "localhost";
 
+const USER_STATUS_INDEX_PATH = `${DAC_DOMAIN}/userstatus`;
 const PROFILE_INDEX_PATH = `${DAC_DOMAIN}/profileIndex.json`;
 const PREFERENCES_INDEX_PATH = `${DAC_DOMAIN}/preferencesIndex.json`;
 const DEBUG_ENABLED = "true";
@@ -37,6 +39,15 @@ export class UserProfileDAC extends DacLibrary implements IUserProfileDAC {
   // ************************************************************************/
   // **** DAC Methods: All Set Methods must be called and executed in DAC ***/
   // ************************************************************************/
+  public async setUserStatus(status: string): Promise<IDACResponse> {
+    if (!this.connector) {
+      throw new Error("Connector not initialized");
+    }
+    return await this.connector.connection
+      .remoteHandle()
+      .call("setUserStatus", status);
+  }
+
   public async setProfile(data: IUserProfile): Promise<IDACResponse> {
     if (!this.connector) {
       throw new Error("Connector not initialized");
@@ -76,6 +87,33 @@ export class UserProfileDAC extends DacLibrary implements IUserProfileDAC {
   // ********************************************************************/
   // **** Library Methods: Get Methods must be implemented in Library ***/
   // ********************************************************************/
+
+  /**
+   * This method is used to retrive last saved users profile information globaly. accross all skapps using this dac
+   * @param userID need to pass a dummy data for remotemethod call sample {test:"test"}
+   * @param options need to pass {ipd:"SkyId"} for skyId profiles
+   * @returns Promise<any> the last saved users profile data
+   */
+  public async getUserStatus(userID: string, options?: IProfileOptions): Promise<any> {
+    if (typeof this.client === "undefined") {
+      throw Error('userprofile-library: SkynetClient not initialized')
+    }
+    try {
+      let status: string | null = null;
+      // Skapp Specific Update
+      if (options && options.skapp) {
+        const USER_STATUS_PATH = `${DAC_DOMAIN}/${options.skapp}/userstatus`;
+        status = await this.getEntryData(userID, USER_STATUS_PATH);
+      }
+      else {//latest status
+        status = await this.getEntryData(userID, USER_STATUS_INDEX_PATH);
+      }
+      return status ? {status} : {status : DEFAULT_USER_STATUS};
+    } catch (error) {
+      this.log('Error occurred trying to get user status, err: ', error);
+      return { error: error }
+    }
+  }
 
   /**
    * This method is used to retrive last saved users profile information globaly. accross all skapps using this dac
@@ -245,6 +283,24 @@ export class UserProfileDAC extends DacLibrary implements IUserProfileDAC {
     }
   }
 
+  // updateFile merely wraps setJSON but is typed in a way that avoids repeating
+  // the awkwars "as unknown as JsonData" everywhere
+  private async getEntryData(userID: string, path: string): Promise<string | null> {
+    this.log('reading EntryData at path', path);
+    //this.log('updating file at path(jsonString)', path, jsonString)
+    try {
+      const entryData = await this.client.file.getEntryData(userID, path);
+      if (entryData && entryData.data)
+        return fromByteArray(entryData.data);
+      else
+        return null;
+    }
+    catch (e) {
+      this.log(' Error Getting Entry Data ', e)
+      return null;
+      //throw e;
+    }
+  }
   // downloadFile merely wraps getJSON but is typed in a way that avoids
   // repeating the awkward "as unknown as T" everywhere
   private async downloadFile<T>(userID: string, path: string): Promise<T | null> {

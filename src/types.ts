@@ -1,15 +1,19 @@
 export const VERSION = 1;
 export interface IUserProfileDAC {
+  setUserStatus(status: string): Promise<IDACResponse>;
   setProfile(profile: IUserProfile): Promise<IDACResponse>;
   updateProfile(profile: Partial<IUserProfile>): Promise<IDACResponse>;
   setPreferences(prefs: IUserPreferences): Promise<IDACResponse>;
 
   //getProfile(): Promise<any>;
+  getUserStatus(userID: string, options?: IProfileOptions): Promise<any>;
   getProfile(userID: string, options: IProfileOptions): Promise<any>;
   getProfileHistory(userID: string): Promise<any>;
   getPreferences(userID: string, options: IPreferencesOptions): Promise<any>;
   getPreferencesHistory(userID: string): Promise<any>
 }
+
+export const DEFAULT_USER_STATUS: string = "none";
 
 // DEFAULT_USER_PROFILE defines all props as it is used in validator
 export const DEFAULT_USER_PROFILE: IUserProfile = {
