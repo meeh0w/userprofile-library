@@ -2,11 +2,26 @@ import { stringToUint8ArrayUtf8, uint8ArrayToStringUtf8, DacLibrary, MySky, Cust
 import { PermCategory, Permission, PermType } from "skynet-mysky-utils";
 import { Convert } from "./skystandards"
 import {
-  VERSION, DEFAULT_PREFERENCES, DEFAULT_USER_STATUS, DEFAULT_USER_PROFILE, IDACResponse, IUserProfileDAC, IProfileOptions, IUserProfile, IPreferencesOptions, IUserPreferences, IProfileIndex
+  VERSION, 
+  StatusType, 
+  IUserStatusOptions, 
+  IUserStatus, 
+  DEFAULT_PREFERENCES, 
+  DEFAULT_USER_STATUS, 
+  DEFAULT_USER_PROFILE, 
+  IDACResponse, 
+  IUserProfileDAC, 
+  IProfileOptions, 
+  IUserProfile, 
+  IPreferencesOptions, 
+  IUserPreferences, 
+  IProfileIndex,
+  LastSeenPrivacyType
 } from "./types";
-import { fromByteArray, toByteArray } from "base64-js";
+
 
 const DAC_DOMAIN = "profile-dac.hns";
+//const DAC_DOMAIN = "support-dac.hns";
 //const DAC_DOMAIN = "localhost";
 
 const USER_STATUS_INDEX_PATH = `${DAC_DOMAIN}/userstatus`;
@@ -23,6 +38,8 @@ const portal =
 // PROFILE_PATH: `${DAC_DOMAIN}/${skapp}/userprofile.json`,
 // PROFILE_INDEX_PATH: `${DAC_DOMAIN}/profileIndex.json`,
 // PREFERENCES_INDEX_PATH: `${DAC_DOMAIN}/preferencesIndex.json`
+
+export {LastSeenPrivacyType,PrivacyType} from "./types";
 export class UserProfileDAC extends DacLibrary implements IUserProfileDAC {
   private client: SkynetClient
 
@@ -83,7 +100,33 @@ export class UserProfileDAC extends DacLibrary implements IUserProfileDAC {
       .remoteHandle()
       .call("setPreferences", data);
   }
-
+  public async setGlobalPreferences(data: IUserPreferences): Promise<IDACResponse> {
+    if (!this.connector) {
+      throw new Error("Connector not initialized");
+    }
+    if (typeof data === 'string') {
+      data = Convert.toPreferences(data);
+    }
+    return await this.connector.connection
+      .remoteHandle()
+      .call("setGlobalPreferences", data);
+  }
+  public async getSkappPreferences(): Promise<any> {
+    if (!this.connector) {
+      throw new Error("Connector not initialized");
+    }
+    return await this.connector.connection
+      .remoteHandle()
+      .call("getSkappPreferences", undefined);
+  }
+  public async getGlobalPreferences(): Promise<any> {
+    if (!this.connector) {
+      throw new Error("Connector not initialized");
+    }
+    return await this.connector.connection
+      .remoteHandle()
+      .call("getGlobalPreferences", undefined);
+  }
   // ********************************************************************/
   // **** Library Methods: Get Methods must be implemented in Library ***/
   // ********************************************************************/
@@ -94,10 +137,11 @@ export class UserProfileDAC extends DacLibrary implements IUserProfileDAC {
    * @param options need to pass {ipd:"SkyId"} for skyId profiles
    * @returns Promise<any> the last saved users profile data
    */
-  public async getUserStatus(userID: string, options?: IProfileOptions): Promise<any> {
+  public async getUserStatus(userID: string, options?: IUserStatusOptions): Promise<IUserStatus | any> {
     if (typeof this.client === "undefined") {
       throw Error('userprofile-library: SkynetClient not initialized')
     }
+    let userStatus: IUserStatus = DEFAULT_USER_STATUS;
     try {
       let status: string | null = null;
       // Skapp Specific Update
@@ -108,13 +152,47 @@ export class UserProfileDAC extends DacLibrary implements IUserProfileDAC {
       else {//latest status
         status = await this.getEntryData(userID, USER_STATUS_INDEX_PATH);
       }
-      return status ? {status} : {status : DEFAULT_USER_STATUS};
+      userStatus = this.parseUserStatusEntryData(status);
+      // if callback function is present return value in call back function
+      if (options && options.getRealtimeUpdate) {
+        options.getRealtimeUpdate(userStatus)
+        setInterval(async () => {
+          this.log(' Start : update lastSeen : Every 30 second');
+          try {
+            let status: string | null = null;
+            // Skapp Specific Update
+            if (options && options.skapp) {
+              const USER_STATUS_PATH = `${DAC_DOMAIN}/${options.skapp}/userstatus`;
+              status = await this.getEntryData(userID, USER_STATUS_PATH);
+            }
+            else {//latest status
+              status = await this.getEntryData(userID, USER_STATUS_INDEX_PATH);
+            }
+            userStatus = this.parseUserStatusEntryData(status);
+          } catch (error) {
+            this.log('Error occurred trying to get user status, err: ', error);
+            return { error: error }
+          }
+          this.log(' End : update lastSeen ');
+        }, 60000);
+      }
+      else {
+        return userStatus;
+      }
     } catch (error) {
       this.log('Error occurred trying to get user status, err: ', error);
       return { error: error }
     }
   }
-
+  private parseUserStatusEntryData(data: string | null): IUserStatus {
+    const userStatus: IUserStatus = DEFAULT_USER_STATUS;
+    if (data) {
+      const dataList = data.split("|");
+      userStatus.status = dataList[0] as any;
+      userStatus.lastSeen = dataList[1] as any;
+    }
+    return userStatus;
+  }
   /**
    * This method is used to retrive last saved users profile information globaly. accross all skapps using this dac
    * @param userID need to pass a dummy data for remotemethod call sample {test:"test"}
@@ -291,7 +369,7 @@ export class UserProfileDAC extends DacLibrary implements IUserProfileDAC {
     try {
       const entryData = await this.client.file.getEntryData(userID, path);
       if (entryData && entryData.data)
-        return fromByteArray(entryData.data);
+        return Buffer.from(entryData.data).toString("utf-8");
       else
         return null;
     }
@@ -301,6 +379,7 @@ export class UserProfileDAC extends DacLibrary implements IUserProfileDAC {
       //throw e;
     }
   }
+
   // downloadFile merely wraps getJSON but is typed in a way that avoids
   // repeating the awkward "as unknown as T" everywhere
   private async downloadFile<T>(userID: string, path: string): Promise<T | null> {
@@ -340,4 +419,4 @@ export class UserProfileDAC extends DacLibrary implements IUserProfileDAC {
       ),
     ];
   }
-}
+};
