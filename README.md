@@ -21,7 +21,7 @@ abstracting all of its complexities from the skapp developer.
 The skapp developer is expected to call upon the User Profile record when its user
 perform the following types of actions. This is when a user
 
-*** "UserStatus" is experimental feature and will be formally release after getting Skynet community feedback. Implementation may change based on Skynet community feedback ***
+***"UserStatus" is experimental feature and will be formally release after getting Skynet community feedback. Implementation may change based on Skynet community feedback***
 
 ```typescript
 export interface IUserProfileDAC {
