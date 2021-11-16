@@ -153,7 +153,7 @@ import { UserProfileDAC } from "@skynethub/userprofile-library";
   await mySky.loadDacs(userProfileRecord);
 
   let userProfile =await mySky.getProfile(userID);
-  let userPreference =await mySky.getPreference(userID);
+  let userPreference =await mySky.getPreferences(userID);
 
 
 
