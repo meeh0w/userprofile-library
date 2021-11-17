@@ -8,13 +8,14 @@ export interface IUserProfileDAC {
   getSkappPreferences():Promise<any>;
   setGlobalPreferences(prefs: IUserPreferences): Promise<IDACResponse>;
   getGlobalPreferences():Promise<any>;
-
+ 
   // Library Methods
   getUserStatus(userID: string, options?: IUserStatusOptions): Promise<IUserStatus>;
   getProfile(userID: string, options: IProfileOptions): Promise<any>;
   getProfileHistory(userID: string): Promise<any>;
   getPreferences(userID: string, options: IPreferencesOptions): Promise<any>;
-  getPreferencesHistory(userID: string): Promise<any>
+  getPreferencesHistory(userID: string): Promise<any>;
+  getSkappsIndex(userID: string): Promise<any>;
 }
 
 
@@ -50,8 +51,8 @@ export const UserPresenceType = {
 export type UserPresenceType = typeof UserPresenceType[keyof typeof UserPresenceType];
 
 export const DEFAULT_USER_STATUS = {
-  status: StatusType.NONE, // 6 bits
-  lastSeen: 0 // 32 bits
+  status: StatusType.NONE,
+  lastSeen: 0
 }
 
 // DEFAULT_USER_PROFILE defines all props as it is used in validator
@@ -120,12 +121,13 @@ export interface IProfileOptions {
 }
 export interface IUserStatusOptions {
   skapp?: string,
-  getRealtimeUpdate?: (latestUserStatus : IUserStatus) => void;  
+  onUserStatusChange?: (latestUserStatus : IUserStatus) => void;  
 }
 export interface IPreferencesIndex {
   version: number;
   preferences: IUserPreferences;
   lastUpdatedBy: string;
+  skapps: string[];
   historyLog: IHistoryLog[];
 }
 export interface IUserPreferences {

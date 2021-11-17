@@ -19,12 +19,42 @@ Skynetlabs. The library will contain a hardcoded reference to its domain, thus
 abstracting all of its complexities from the skapp developer.
 
 The skapp developer is expected to call upon the User Profile record when its user
-perform the following types of actions. This is when a user
+perform the following types of actions.
 
-***"UserStatus" is experimental feature and will be formally release after getting Skynet community feedback. Implementation may change based on Skynet community feedback***
+**_"UserStatus" is experimental feature and will be formally release after getting Skynet community feedback. Implementation may change based on Skynet community feedback_**
+Two new features. 
+(1) (near) RealTime UserStatus 
+(2) Privacy Preferences
+
+RealTime UserStatus on Skynet:
+
+(1) UserStatus consist of two fields "status" and "lastSeen". Status can be Online,Do not disturb, Invisible..etc (full list). LastSeen value contains unix timestamp. calling system is responsbile for converting timestamp to localtime/time format.
+
+(2) Also, Skynet is unique related to userStatus. We have two types of UserStatus. "Global" and "Skapp" specific. "Global" level only "LastSeen" value gets updated every two minutes. As of today there is no global status(this depends on community feedback post alpha release). "Skapp" level, User can set status from list of possible values (link,this will be expanded to support custom messages in future). Skapp specific status are most useful when user wants to be "online" on riftApp.hns but may prefer to stay "invisible" on skymessage.hns
+
+// Data Path
+PREFERENCES_INDEX_PATH: `profile-dac.hns/preferencesIndex.json`
+PREFERENCES_PATH: `profile-dac.hns/${skapp}/preferences.json`
+PROFILE_INDEX_PATH: `profile-dac.hns/profileIndex.json`
+PROFILE_PATH: `profile-dac.hns/${skapp}/userprofile.json`
+USER_STATUS_INDEX_PATH: `profile-dac.hns/userstatus`
+USER_STATUS_PATH: `profile-dac.hns/${skapp}/userstatus`
+
+${skapp} will be replaced with skapp domain name.
+
+if skapp is skyprofile.hns, path will look like below
+PREFERENCES_INDEX_PATH: `profile-dac.hns/preferencesIndex.json`
+PREFERENCES_PATH: `profile-dac.hns/skyprofile.hns/preferences.json`
+PROFILE_INDEX_PATH: `profile-dac.hns/profileIndex.json`
+PROFILE_PATH: `profile-dac.hns/skyprofile.hns/userprofile.json`
+USER_STATUS_INDEX_PATH: `profile-dac.hns/userstatus`
+USER_STATUS_PATH: `profile-dac.hns/skyprofile.hns/userstatus`
+
+on a seperate note, If you want to explore these paths and check your data at these paths, I strongly recommend to use https://riftapp.hns.siasky.net ("data" tab on UI)
 
 ```typescript
-export interface IUserProfileDAC {
+
+
  // DAC methods
   setUserStatus(status: string): Promise<IDACResponse>;
   setProfile(profile: IUserProfile): Promise<IDACResponse>;
@@ -40,7 +70,6 @@ export interface IUserProfileDAC {
   getProfileHistory(userID: string): Promise<any>;
   getPreferences(userID: string, options: IPreferencesOptions): Promise<any>;
   getPreferencesHistory(userID: string): Promise<any>
-}
 
 export interface IUserProfile {
   version: number;
@@ -61,76 +90,96 @@ export interface IAvatar {
   h: number,
   url: string
 }
-export interface IProfileOptions{
+// Sample JSON
+{
+  version: 1,
+  username: "Terminator",
+  emailID: "terminator@skynetlabs.mysky",
+  firstName: "My",
+  lastName: "Sky",
+  contact: "007",
+  aboutMe: "New decentralized Internet",
+  location: "Above Cloud",
+  topics: ['Skynet', 'MySky','Web3'],
+  connections: [
+   {
+    "twitter": "https://twitter.com/skynetlabs"
+   },
+   {
+    "github": "https://github.com/skynetlabs"
+   },
+  ],
+  avatar: [
+    {
+      "ext": "jpeg",
+      "w": 300,
+      "h": 300,
+      "url": "sia://RABycdgWznT8YeIk57CDE9w0CiwWeHi7JoYOyTwq_UaSXQ/23/300"
+    }
+  ]
+}
+
+interface IProfileOptions{
   ipd?:string,
   skapp?:string
 }
-export interface IUserPreferences {
+interface IUserPreferences {
   version: number,
   darkmode?: boolean,
   portal?: string,
   userStatus?: IUserStatusPreferences | null
 }
-export interface IUserStatusPreferences {
+interface IUserStatusPreferences {
   statusPrivacy: PrivacyType;
   lastSeenPrivacy: LastSeenPrivacyType;
   updatefrequency: number; // 0,1,5,10,15
-  //more to be added in upcoming versions 
+  //more to be added in upcoming versions
 }
-export interface IUserStatusOptions {
+interface IUserStatusOptions {
   skapp?: string,
-  getRealtimeUpdate?: (latestUserStatus : IUserStatus) => void;  
+  onUserStatusChange?: (latestUserStatus : IUserStatus) => void;
 }
-export interface IPreferencesOptions{
+interface IPreferencesOptions{
   skapp?:string
 }
-export interface ICreateDACResponse {
+interface ICreateDACResponse {
   submitted: boolean;
   error?: string;
 }
 
-export interface IUserStatusOptions {
-  skapp?: string,
-  getRealtimeUpdate?: (latestUserStatus : IUserStatus) => void;  
-}
-
 // Types
-export const StatusType = {
+const StatusType = {
   ONLINE: 'Online',
   IDLE: 'Idle',
   DO_NOT_DISTURB: 'Do Not Disturb',
   INVISIBLE: 'Invisible',
   NONE: 'None'
 } as const;
-export type StatusType = typeof StatusType[keyof typeof StatusType];
 
-export const PrivacyType = {
+const PrivacyType = {
   PRIVATE: 'Private',
   PUBLIC: 'Public'
 } as const;
-export type PrivacyType = typeof PrivacyType[keyof typeof PrivacyType];
 
-export const LastSeenPrivacyType = {
+const LastSeenPrivacyType = {
   PRIVATE: 'Private',
   PUBLIC_TS: 'Public with Timestamp',
   PUBLIC_NO_TS: 'Public without Timestamp',
 } as const;
-export type LastSeenPrivacyType = typeof LastSeenPrivacyType[keyof typeof LastSeenPrivacyType];
 
-export const UserPresenceType = {
+const UserPresenceType = {
   RECENTLY: 'Recently',
   YESTERDAY: 'Yesterday',
   WITHIN_A_WEEK: 'Within a week',
   WITHIN_A_MONTH: 'Within a month',
   LONG_TIME_AGO: 'Long time ago'
 } as const;
-export type UserPresenceType = typeof UserPresenceType[keyof typeof UserPresenceType];
 ```
 
 ## Usage
 
 Using the library is very straightforward. In this section we'll show an example
-of how a skapp could use the content record library and record user interactions.
+of how a skapp could use the userprofile library.
 
 ```typescript
 import { SkynetClient } from "skynet-js";
@@ -145,18 +194,59 @@ import { UserProfileDAC } from "@skynethub/userprofile-library";
 
   // load mysky
   const mySky = await client.loadMySky("exampleskapp.hns");
-  
+
   // get userID
-  const userID = await mySky.userID()
-  
+  const userID = await mySky.userID();
+
   // load DACs
   await mySky.loadDacs(userProfileRecord);
 
-  let userProfile =await mySky.getProfile(userID);
-  let userPreference =await mySky.getPreferences(userID);
+  let userProfile = await mySky.getProfile(userID);
+  let userPreference = await mySky.getPreference(userID);
 
+  // ####### (near) RealTime UserStatus #######
+  // UserStatus consist of two fields "status" and "lastSeen"
+  // We have two type of UserStatus. "Global" and "Skapp" specific.
+  
+  // "Global" 
+  
+  // Method 1: get userstatus via callback every 2 minutes
+  // Only "LastSeen" value will change.
+  const onGlobalUserStatusChange = async (latestStatus) => {
+    console.log(`>>> callback : ${JSONstringify(latestStatus)}`);
+    // sample latestStatus : {"status":"None","lastSeen":"1637108915830"}
+    // parse display "latestStatus" in your skapp.
+  };
+  profileDAC.getUserStatus(userID, {onUserStatusChange: onGlobalUserStatusChange,
+  });
+  // Method 2: get one time status without callback
+  const globalUserStatus = await profileDAC.getUserStatus(userID,);
+  
+  //  "Skapp" specific
+  // Method 1 : get specific userstatus via callback every 2 minutes
+  const skapp = "riftapp.hns";
+  const onSkappUserStatusChange = async (latestStatus) => {
+    console.log(`>>> callback : ${JSONstringify(latestStatus)}`);
+    // sample latestStatus : {"status":"Online","lastSeen":"1637108914997"}
+    // parse display "latestStatus" in your skapp.
+  };
+  profileDAC.getUserStatus(userID, {skapp: skapp,onUserStatusChange: onSkappUserStatusChange});
+  // Method 2: get one time status without callback
+  const globalUserStatus = await profileDAC.getUserStatus(userID,);
 
-
- 
-})();
+  // Preferences
+  const globalPref = await profileDAC.getPreferences(userID)
+  const skappPref = await profileDAC.getPreferences(userID, { skapp: "riftapp.hns"})
+  const preferencesJSON = {
+      darkmode: true,
+      portal: "https://siasky.net/",
+      userStatus:
+               { 
+                  statusPrivacy:"Public",
+                  lastSeenPrivacy:"Public with Timestamp"
+               }
+      };
+  const globalPref = await profileDAC.setGlobalPreferences(preferencesJSON)
+  // Set preferences for loggedIn Skapp domain
+  const skappPref = await profileDAC.setPreferences(preferencesJSON)
 ```

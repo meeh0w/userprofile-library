@@ -2,19 +2,19 @@ import { stringToUint8ArrayUtf8, uint8ArrayToStringUtf8, DacLibrary, MySky, Cust
 import { PermCategory, Permission, PermType } from "skynet-mysky-utils";
 import { Convert } from "./skystandards"
 import {
-  VERSION, 
-  StatusType, 
-  IUserStatusOptions, 
-  IUserStatus, 
-  DEFAULT_PREFERENCES, 
-  DEFAULT_USER_STATUS, 
-  DEFAULT_USER_PROFILE, 
-  IDACResponse, 
-  IUserProfileDAC, 
-  IProfileOptions, 
-  IUserProfile, 
-  IPreferencesOptions, 
-  IUserPreferences, 
+  VERSION,
+  StatusType,
+  IUserStatusOptions,
+  IUserStatus,
+  DEFAULT_PREFERENCES,
+  DEFAULT_USER_STATUS,
+  DEFAULT_USER_PROFILE,
+  IDACResponse,
+  IUserProfileDAC,
+  IProfileOptions,
+  IUserProfile,
+  IPreferencesOptions,
+  IUserPreferences,
   IProfileIndex,
   LastSeenPrivacyType
 } from "./types";
@@ -27,7 +27,9 @@ const DAC_DOMAIN = "profile-dac.hns";
 const USER_STATUS_INDEX_PATH = `${DAC_DOMAIN}/userstatus`;
 const PROFILE_INDEX_PATH = `${DAC_DOMAIN}/profileIndex.json`;
 const PREFERENCES_INDEX_PATH = `${DAC_DOMAIN}/preferencesIndex.json`;
-const DEBUG_ENABLED = "true";
+const urlParams = new URLSearchParams(window.location.search);
+const DEBUG_ENABLED = urlParams.get('debug') === "true";
+
 
 // We'll define a portal to allow for developing on localhost.
 // When hosted on a skynet portal, SkynetClient doesn't need any arguments.
@@ -39,7 +41,7 @@ const portal =
 // PROFILE_INDEX_PATH: `${DAC_DOMAIN}/profileIndex.json`,
 // PREFERENCES_INDEX_PATH: `${DAC_DOMAIN}/preferencesIndex.json`
 
-export {LastSeenPrivacyType,PrivacyType} from "./types";
+export { LastSeenPrivacyType, PrivacyType } from "./types";
 export class UserProfileDAC extends DacLibrary implements IUserProfileDAC {
   private client: SkynetClient
 
@@ -144,6 +146,7 @@ export class UserProfileDAC extends DacLibrary implements IUserProfileDAC {
     let userStatus: IUserStatus = DEFAULT_USER_STATUS;
     try {
       let status: string | null = null;
+      this.log(` options.getRealtimeUpdate ${options!.onUserStatusChange}`);
       // Skapp Specific Update
       if (options && options.skapp) {
         const USER_STATUS_PATH = `${DAC_DOMAIN}/${options.skapp}/userstatus`;
@@ -154,8 +157,8 @@ export class UserProfileDAC extends DacLibrary implements IUserProfileDAC {
       }
       userStatus = this.parseUserStatusEntryData(status);
       // if callback function is present return value in call back function
-      if (options && options.getRealtimeUpdate) {
-        options.getRealtimeUpdate(userStatus)
+      if (options && options.onUserStatusChange) {
+        options.onUserStatusChange(userStatus)
         setInterval(async () => {
           this.log(' Start : update lastSeen : Every 30 second');
           try {
@@ -169,12 +172,13 @@ export class UserProfileDAC extends DacLibrary implements IUserProfileDAC {
               status = await this.getEntryData(userID, USER_STATUS_INDEX_PATH);
             }
             userStatus = this.parseUserStatusEntryData(status);
+            options!.onUserStatusChange!(userStatus) ;
           } catch (error) {
             this.log('Error occurred trying to get user status, err: ', error);
             return { error: error }
           }
           this.log(' End : update lastSeen ');
-        }, 60000);
+        }, 120000);
       }
       else {
         return userStatus;
@@ -300,30 +304,45 @@ export class UserProfileDAC extends DacLibrary implements IUserProfileDAC {
       throw Error('userprofile-library: SkynetClient not initialized')
     }
     try {
-      let lastSkapp = null;
-      if (options && options.skapp) {
-        lastSkapp = options.skapp;
+      let result = null;
+      if (options && options.skapp) { // download preferece json from Skapp folder and return
+        const SKAPP_PREF_PATH = `${DAC_DOMAIN}/${options.skapp}/preferences.json`;
+        const temp: any = await this.downloadFile(userID, SKAPP_PREF_PATH);
+        result = temp ? temp : DEFAULT_PREFERENCES;
       }
-      else {
-        // get "Skapp" name which updated preference last.
-        lastSkapp = await this.handleGetLastestPrefSkapp(userID);
+      else // get Global Preferences
+      {
+        const GLOBAL_PREF_PATH = `${DAC_DOMAIN}/preferencesIndex.json`;
+        const temp: any = await this.downloadFile(userID, GLOBAL_PREF_PATH);
+        result = temp && temp.preferences ? temp.preferences : DEFAULT_PREFERENCES;
       }
-      // null mean profile is not initilaized correctly. 
-      // Ideally this shouldn't happen, since we are initializing empty preference at first MySky login
-      if (lastSkapp != null) {
-        // download preferece json from Skapp folder and return
-        const LATEST_PREF_PATH = `${DAC_DOMAIN}/${lastSkapp}/preferences.json`;
-        return await this.downloadFile(userID, LATEST_PREF_PATH);
-      }
-      else {
-        return DEFAULT_PREFERENCES;
-      }
+      return result;
     } catch (error) {
-      this.log('Error occurred trying to record new content, err: ', error)
+      this.log('Error occurred in getPreferences, err: ', error)
       return { error: error }
     }
   }
 
+  /**
+   * This method is used to retrive last saved users Preferences information globaly. accross all skapps using this dac
+   * @param data need to pass a dummy data for remotemethod call sample {test:"test"}
+   * @returns Promise<any> the last saved users Preferences data
+   */
+  public async getSkappsIndex(userID: any): Promise<any> {
+    if (typeof this.client === "undefined") {
+      throw Error('userprofile-library: SkynetClient not initialized')
+    }
+    try {
+      let result = null;
+      const GLOBAL_PREF_PATH = `${DAC_DOMAIN}/preferencesIndex.json`;
+      const temp: any = await this.downloadFile(userID, GLOBAL_PREF_PATH);
+      result = temp && temp.skapps ? temp.skapps : [];
+      return result;
+    } catch (error) {
+      this.log('Error occurred in getSkappsIndex, err: ', error)
+      return { error: error }
+    }
+  }
   /**
   * This method is used to retrive users Preferences information update History. accross all skapps using this dac
   * @param data need to pass a dummy data for remotemethod call sample {test:"test"}
