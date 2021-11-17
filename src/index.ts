@@ -146,7 +146,7 @@ export class UserProfileDAC extends DacLibrary implements IUserProfileDAC {
     let userStatus: IUserStatus = DEFAULT_USER_STATUS;
     try {
       let status: string | null = null;
-      this.log(` options.getRealtimeUpdate ${options!.onUserStatusChange}`);
+      this.log(` options.onUserStatusChange ${options!.onUserStatusChange}`);
       // Skapp Specific Update
       if (options && options.skapp) {
         const USER_STATUS_PATH = `${DAC_DOMAIN}/${options.skapp}/userstatus`;
