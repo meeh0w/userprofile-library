@@ -7,7 +7,7 @@
     "declarationMap": true,
     "isolatedModules": true,
     "outDir": "dist",
-
+    "module": "UMD",
     "moduleResolution": "node",
     "target": "esnext",
     "types": ["node"]
